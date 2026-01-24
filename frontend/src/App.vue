@@ -1,6 +1,7 @@
 <template>
   <div class="container">
     <Settings />
+    <DownloadsManager ref="downloadsManager" />
 
     <header class="header">
       <h1>Downloadix</h1>
@@ -9,6 +10,7 @@
         <span class="platform-icon youtube" title="YouTube">YT</span>
         <span class="platform-icon twitter" title="X / Twitter">X</span>
         <span class="platform-icon tiktok" title="TikTok">TT</span>
+        <span class="platform-icon instagram" title="Instagram">IG</span>
       </div>
     </header>
 
@@ -36,10 +38,12 @@
         v-if="videoInfo"
         :url="currentUrl"
         :format="selectedFormat"
+        :title="videoInfo?.title || 'Unknown'"
         :disabled="!videoInfo"
         @download-start="handleDownloadStart"
         @download-complete="handleDownloadComplete"
         @download-error="handleDownloadError"
+        @download-added="handleDownloadAdded"
       />
     </main>
 
@@ -55,8 +59,10 @@ import VideoForm from './components/VideoForm.vue'
 import VideoPreview from './components/VideoPreview.vue'
 import DownloadBtn from './components/DownloadBtn.vue'
 import Settings from './components/Settings.vue'
+import DownloadsManager from './components/DownloadsManager.vue'
 
 const videoForm = ref(null)
+const downloadsManager = ref(null)
 const videoInfo = ref(null)
 const currentUrl = ref('')
 const selectedFormat = ref('best')
@@ -102,9 +108,21 @@ const handleDownloadComplete = () => {
   setTimeout(() => {
     success.value = ''
   }, 5000)
+
+  // Refresh downloads list
+  downloadsManager.value?.fetchDownloads()
 }
 
 const handleDownloadError = (message) => {
   error.value = message
+
+  // Refresh downloads list
+  downloadsManager.value?.fetchDownloads()
+}
+
+const handleDownloadAdded = (download) => {
+  // The downloads manager will automatically pick up the new download
+  // via its polling mechanism, but we can force a refresh
+  downloadsManager.value?.fetchDownloads()
 }
 </script>

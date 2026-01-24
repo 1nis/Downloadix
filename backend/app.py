@@ -19,9 +19,11 @@ DEFAULT_SETTINGS = {
     'download_folder': os.path.join(os.path.dirname(__file__), 'downloads')
 }
 
-# In-memory storage for download progress
+# In-memory storage for download progress and control
 progress_data = {}
 download_files = {}
+download_threads = {}
+cancel_flags = {}
 
 def load_settings():
     """Load settings from file or return defaults."""
@@ -56,6 +58,8 @@ def detect_platform(url):
         return 'twitter'
     elif 'tiktok.com' in url:
         return 'tiktok'
+    elif 'instagram.com' in url or 'instagr.am' in url:
+        return 'instagram'
     return 'unknown'
 
 def format_duration(seconds):
@@ -135,13 +139,19 @@ def get_video_info():
 
     platform = detect_platform(url)
     if platform == 'unknown':
-        return jsonify({'error': 'Unsupported platform. Use YouTube, X/Twitter, or TikTok URLs.'}), 400
+        return jsonify({'error': 'Unsupported platform. Use YouTube, X/Twitter, TikTok, or Instagram URLs.'}), 400
 
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'extract_flat': False,
     }
+
+    # Add cookies for Instagram if needed
+    if platform == 'instagram':
+        ydl_opts['http_headers'] = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -195,6 +205,8 @@ def get_video_info():
             return jsonify({'error': 'This video is private'}), 400
         elif 'Video unavailable' in error_msg:
             return jsonify({'error': 'This video is unavailable'}), 400
+        elif 'login' in error_msg.lower():
+            return jsonify({'error': 'This content requires login'}), 400
         return jsonify({'error': f'Could not fetch video info: {error_msg}'}), 400
     except Exception as e:
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500
@@ -205,6 +217,7 @@ def start_download():
     data = request.get_json()
     url = data.get('url')
     format_id = data.get('format', 'best')
+    title = data.get('title', 'Unknown')
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
@@ -215,6 +228,9 @@ def start_download():
 
     download_id = str(uuid.uuid4())
 
+    # Initialize cancel flag
+    cancel_flags[download_id] = False
+
     # Initialize progress data
     progress_data[download_id] = {
         'status': 'starting',
@@ -224,10 +240,16 @@ def start_download():
         'eta': 0,
         'percent': 0,
         'filename': None,
+        'title': title,
+        'platform': platform,
         'error': None
     }
 
     def progress_hook(d):
+        # Check if cancelled
+        if cancel_flags.get(download_id, False):
+            raise Exception('Download cancelled by user')
+
         if d['status'] == 'downloading':
             downloaded = d.get('downloaded_bytes', 0)
             total = d.get('total_bytes') or d.get('total_bytes_estimate', 0)
@@ -250,6 +272,8 @@ def start_download():
                 'speed_str': format_speed(speed),
                 'eta_str': format_eta(eta),
                 'filename': None,
+                'title': title,
+                'platform': platform,
                 'error': None
             }
         elif d['status'] == 'finished':
@@ -257,6 +281,11 @@ def start_download():
 
     def download_thread():
         try:
+            # Check if cancelled before starting
+            if cancel_flags.get(download_id, False):
+                progress_data[download_id]['status'] = 'cancelled'
+                return
+
             downloads_dir = get_downloads_dir()
             file_id = str(uuid.uuid4())
             output_template = os.path.join(downloads_dir, f'{file_id}.%(ext)s')
@@ -270,8 +299,26 @@ def start_download():
                 'progress_hooks': [progress_hook],
             }
 
+            # Add headers for Instagram/TikTok
+            if platform in ['instagram', 'tiktok']:
+                ydl_opts['http_headers'] = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
+
+                # Check if cancelled
+                if cancel_flags.get(download_id, False):
+                    # Clean up downloaded file
+                    for filename in os.listdir(downloads_dir):
+                        if filename.startswith(file_id):
+                            try:
+                                os.remove(os.path.join(downloads_dir, filename))
+                            except:
+                                pass
+                    progress_data[download_id]['status'] = 'cancelled'
+                    return
 
                 # Find the downloaded file
                 downloaded_file = None
@@ -286,8 +333,8 @@ def start_download():
                     return
 
                 # Get video title for filename
-                title = info.get('title', 'video')
-                safe_title = re.sub(r'[<>:"/\\|?*]', '', title)[:100]
+                video_title = info.get('title', 'video')
+                safe_title = re.sub(r'[<>:"/\\|?*]', '', video_title)[:100]
                 ext = os.path.splitext(downloaded_file)[1]
                 download_name = f"{safe_title}{ext}"
 
@@ -301,18 +348,39 @@ def start_download():
                 progress_data[download_id]['percent'] = 100
                 progress_data[download_id]['filename'] = download_name
 
-        except yt_dlp.utils.DownloadError as e:
-            progress_data[download_id]['status'] = 'error'
-            progress_data[download_id]['error'] = f'Download failed: {str(e)}'
         except Exception as e:
-            progress_data[download_id]['status'] = 'error'
-            progress_data[download_id]['error'] = f'An error occurred: {str(e)}'
+            error_msg = str(e)
+            if 'cancelled' in error_msg.lower():
+                progress_data[download_id]['status'] = 'cancelled'
+            else:
+                progress_data[download_id]['status'] = 'error'
+                progress_data[download_id]['error'] = f'Download failed: {error_msg}'
 
     # Start download in background thread
     thread = threading.Thread(target=download_thread, daemon=True)
+    download_threads[download_id] = thread
     thread.start()
 
-    return jsonify({'download_id': download_id})
+    return jsonify({
+        'download_id': download_id,
+        'title': title,
+        'platform': platform
+    })
+
+@app.route('/api/download/cancel/<download_id>', methods=['POST'])
+def cancel_download(download_id):
+    """Cancel an ongoing download."""
+    if download_id not in progress_data:
+        return jsonify({'error': 'Download not found'}), 404
+
+    # Set cancel flag
+    cancel_flags[download_id] = True
+
+    # Update status
+    if progress_data[download_id]['status'] not in ['completed', 'error', 'cancelled']:
+        progress_data[download_id]['status'] = 'cancelling'
+
+    return jsonify({'success': True, 'message': 'Download cancellation requested'})
 
 @app.route('/api/download/progress/<download_id>')
 def download_progress(download_id):
@@ -323,7 +391,7 @@ def download_progress(download_id):
                 data = progress_data[download_id]
                 yield f"data: {json.dumps(data)}\n\n"
 
-                if data['status'] in ['completed', 'error']:
+                if data['status'] in ['completed', 'error', 'cancelled']:
                     break
             else:
                 yield f"data: {json.dumps({'status': 'not_found', 'error': 'Download not found'})}\n\n"
@@ -340,6 +408,41 @@ def download_progress(download_id):
             'X-Accel-Buffering': 'no'
         }
     )
+
+@app.route('/api/download/list')
+def list_downloads():
+    """List all active and recent downloads."""
+    downloads = []
+    for download_id, data in progress_data.items():
+        downloads.append({
+            'id': download_id,
+            'title': data.get('title', 'Unknown'),
+            'platform': data.get('platform', 'unknown'),
+            'status': data.get('status', 'unknown'),
+            'percent': data.get('percent', 0),
+            'speed_str': data.get('speed_str', '0 B/s'),
+            'eta_str': data.get('eta_str', '--:--'),
+            'downloaded_str': data.get('downloaded_str', '0 B'),
+            'total_str': data.get('total_str', '0 B'),
+            'error': data.get('error')
+        })
+    return jsonify(downloads)
+
+@app.route('/api/download/clear', methods=['POST'])
+def clear_completed():
+    """Clear completed, cancelled, and errored downloads from the list."""
+    to_remove = []
+    for download_id, data in progress_data.items():
+        if data['status'] in ['completed', 'cancelled', 'error']:
+            to_remove.append(download_id)
+
+    for download_id in to_remove:
+        progress_data.pop(download_id, None)
+        download_files.pop(download_id, None)
+        cancel_flags.pop(download_id, None)
+        download_threads.pop(download_id, None)
+
+    return jsonify({'cleared': len(to_remove)})
 
 @app.route('/api/download/file/<download_id>')
 def download_file(download_id):
@@ -416,6 +519,12 @@ def download_video():
         'no_warnings': True,
         'merge_output_format': 'mp4',
     }
+
+    # Add headers for Instagram/TikTok
+    if platform in ['instagram', 'tiktok']:
+        ydl_opts['http_headers'] = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:

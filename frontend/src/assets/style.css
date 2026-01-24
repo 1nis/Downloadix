@@ -102,6 +102,10 @@ body {
   background: linear-gradient(45deg, #00f2ea, #ff0050);
 }
 
+.platform-icon.instagram {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+}
+
 /* Card styles */
 .card {
   background: var(--bg-card);
@@ -218,6 +222,10 @@ body {
 
 .platform-badge.tiktok {
   background: linear-gradient(45deg, #00f2ea, #ff0050);
+}
+
+.platform-badge.instagram {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
 }
 
 .duration-badge {
