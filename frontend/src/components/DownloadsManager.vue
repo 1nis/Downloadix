@@ -15,13 +15,38 @@
 
     <div v-if="isOpen" class="downloads-panel card">
       <div class="panel-header">
-        <h3>Downloads</h3>
+        <div class="tabs">
+          <button
+            class="tab-btn"
+            :class="{ active: activeTab === 'downloads' }"
+            @click="activeTab = 'downloads'"
+          >
+            Downloads
+            <span v-if="activeCount > 0" class="tab-badge">{{ activeCount }}</span>
+          </button>
+          <button
+            class="tab-btn"
+            :class="{ active: activeTab === 'history' }"
+            @click="activeTab = 'history'; fetchHistory()"
+          >
+            History
+            <span v-if="history.length > 0" class="tab-badge history-badge">{{ history.length }}</span>
+          </button>
+        </div>
         <div class="header-actions">
           <button
-            v-if="completedCount > 0"
+            v-if="activeTab === 'downloads' && completedCount > 0"
             class="clear-btn"
             @click="clearCompleted"
             title="Clear completed"
+          >
+            Clear
+          </button>
+          <button
+            v-if="activeTab === 'history' && history.length > 0"
+            class="clear-btn"
+            @click="clearHistory"
+            title="Clear history"
           >
             Clear
           </button>
@@ -34,7 +59,8 @@
         </div>
       </div>
 
-      <div class="downloads-list" v-if="downloads.length > 0">
+      <!-- Downloads Tab -->
+      <div v-if="activeTab === 'downloads'" class="downloads-list" v-show="downloads.length > 0">
         <div
           v-for="download in downloads"
           :key="download.id"
@@ -109,8 +135,53 @@
         </div>
       </div>
 
-      <div v-else class="empty-state">
+      <div v-if="activeTab === 'downloads' && downloads.length === 0" class="empty-state">
         <p>No downloads yet</p>
+      </div>
+
+      <!-- History Tab -->
+      <div v-if="activeTab === 'history'" class="downloads-list" v-show="history.length > 0">
+        <div
+          v-for="item in history"
+          :key="item.id"
+          class="download-item history-item"
+          :class="item.status"
+        >
+          <div class="download-info">
+            <div class="download-title">
+              <span :class="['platform-dot', item.platform]"></span>
+              <span class="title-text">{{ truncateTitle(item.title) }}</span>
+            </div>
+            <div class="download-meta">
+              <span v-if="item.status === 'completed'" class="status-icon completed">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
+              <span v-else-if="item.status === 'cancelled'" class="status-icon cancelled">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </span>
+              <span v-else-if="item.status === 'error'" class="status-icon error" :title="item.error">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </span>
+              <span class="size-text" v-if="item.total_str && item.status === 'completed'">{{ item.total_str }}</span>
+            </div>
+          </div>
+          <div class="history-details">
+            <span class="history-time">{{ formatHistoryTime(item.completed_at) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="activeTab === 'history' && history.length === 0" class="empty-state">
+        <p>No history yet</p>
       </div>
     </div>
   </div>
@@ -121,6 +192,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const isOpen = ref(false)
 const downloads = ref([])
+const history = ref([])
+const activeTab = ref('downloads')
 let pollInterval = null
 
 const activeCount = computed(() => {
@@ -206,9 +279,59 @@ const clearCompleted = async () => {
       method: 'POST'
     })
     fetchDownloads()
+    fetchHistory()
   } catch (error) {
     console.error('Failed to clear downloads:', error)
   }
+}
+
+const fetchHistory = async () => {
+  try {
+    const response = await fetch('/api/download/history')
+    if (response.ok) {
+      history.value = await response.json()
+    }
+  } catch (error) {
+    console.error('Failed to fetch history:', error)
+  }
+}
+
+const clearHistory = async () => {
+  try {
+    await fetch('/api/download/history/clear', {
+      method: 'POST'
+    })
+    history.value = []
+  } catch (error) {
+    console.error('Failed to clear history:', error)
+  }
+}
+
+const formatHistoryTime = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now - date
+
+  // Less than 1 minute
+  if (diff < 60000) {
+    return 'Just now'
+  }
+  // Less than 1 hour
+  if (diff < 3600000) {
+    const mins = Math.floor(diff / 60000)
+    return `${mins}m ago`
+  }
+  // Today
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+  // This year
+  if (date.getFullYear() === now.getFullYear()) {
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  }
+  // Older
+  return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 // Expose method for parent to add download
@@ -234,11 +357,13 @@ const updateDownload = (downloadId, data) => {
 defineExpose({
   addDownload,
   updateDownload,
-  fetchDownloads
+  fetchDownloads,
+  fetchHistory
 })
 
 onMounted(() => {
   fetchDownloads()
+  fetchHistory()
   // Poll for updates every 2 seconds
   pollInterval = setInterval(fetchDownloads, 2000)
 })
@@ -346,6 +471,53 @@ onUnmounted(() => {
   margin: 0;
   font-size: 1.1rem;
   color: var(--text-primary);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.tab-badge {
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.tab-btn:not(.active) .tab-badge {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.tab-btn:not(.active) .tab-badge.history-badge {
+  background: var(--bg-tertiary, var(--bg-secondary));
 }
 
 .header-actions {
@@ -551,6 +723,62 @@ onUnmounted(() => {
   text-align: center;
   padding: 30px;
   color: var(--text-secondary);
+}
+
+/* History styles */
+.history-item {
+  padding: 10px 12px;
+}
+
+.history-item .download-info {
+  margin-bottom: 4px;
+}
+
+.download-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
+.status-icon.completed {
+  background: var(--success);
+  color: white;
+}
+
+.status-icon.cancelled {
+  background: var(--text-secondary);
+  color: white;
+}
+
+.status-icon.error {
+  background: var(--error);
+  color: white;
+}
+
+.size-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.history-details {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.history-time {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  opacity: 0.8;
 }
 
 @media (max-width: 480px) {

@@ -24,6 +24,7 @@ progress_data = {}
 download_files = {}
 download_threads = {}
 cancel_flags = {}
+download_history = []  # Session history of completed/cancelled/error downloads
 
 def load_settings():
     """Load settings from file or return defaults."""
@@ -430,11 +431,24 @@ def list_downloads():
 
 @app.route('/api/download/clear', methods=['POST'])
 def clear_completed():
-    """Clear completed, cancelled, and errored downloads from the list."""
+    """Clear completed, cancelled, and errored downloads from the list and add to history."""
     to_remove = []
     for download_id, data in progress_data.items():
         if data['status'] in ['completed', 'cancelled', 'error']:
             to_remove.append(download_id)
+            # Add to history
+            file_info = download_files.get(download_id, {})
+            history_entry = {
+                'id': download_id,
+                'title': data.get('title', 'Unknown'),
+                'platform': data.get('platform', 'unknown'),
+                'status': data.get('status'),
+                'total_str': data.get('total_str', '0 B'),
+                'filename': data.get('filename'),
+                'completed_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'error': data.get('error')
+            }
+            download_history.insert(0, history_entry)
 
     for download_id in to_remove:
         progress_data.pop(download_id, None)
@@ -442,7 +456,22 @@ def clear_completed():
         cancel_flags.pop(download_id, None)
         download_threads.pop(download_id, None)
 
+    # Keep only the last 50 entries in history
+    while len(download_history) > 50:
+        download_history.pop()
+
     return jsonify({'cleared': len(to_remove)})
+
+@app.route('/api/download/history')
+def get_download_history():
+    """Get download history for the current session."""
+    return jsonify(download_history)
+
+@app.route('/api/download/history/clear', methods=['POST'])
+def clear_history():
+    """Clear download history."""
+    download_history.clear()
+    return jsonify({'success': True})
 
 @app.route('/api/download/file/<download_id>')
 def download_file(download_id):
