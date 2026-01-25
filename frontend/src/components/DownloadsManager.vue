@@ -136,7 +136,15 @@
       </div>
 
       <div v-if="activeTab === 'downloads' && downloads.length === 0" class="empty-state">
-        <p>No downloads yet</p>
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+        <p>No active downloads</p>
+        <span class="empty-hint">Paste a video URL to start</span>
       </div>
 
       <!-- History Tab -->
@@ -181,7 +189,14 @@
       </div>
 
       <div v-if="activeTab === 'history' && history.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
         <p>No history yet</p>
+        <span class="empty-hint">Completed downloads will appear here</span>
       </div>
     </div>
   </div>
@@ -384,77 +399,91 @@ onUnmounted(() => {
 }
 
 .downloads-toggle {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: linear-gradient(90deg, var(--accent), #a855f7);
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
   border: none;
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow);
-  transition: var(--transition);
+  box-shadow: 0 4px 24px rgba(108, 99, 255, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
 .downloads-toggle:hover {
-  transform: scale(1.1);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(108, 99, 255, 0.5);
+}
+
+.downloads-toggle:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
 .downloads-toggle.has-active {
-  animation: pulse-ring 2s infinite;
+  animation: pulse-glow 2s infinite;
 }
 
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(108, 99, 255, 0.5);
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 24px rgba(108, 99, 255, 0.4);
   }
-  70% {
-    box-shadow: 0 0 0 10px rgba(108, 99, 255, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(108, 99, 255, 0);
+  50% {
+    box-shadow: 0 4px 32px rgba(108, 99, 255, 0.7), 0 0 0 8px rgba(108, 99, 255, 0.1);
   }
 }
 
 .badge {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  background: var(--error);
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  width: 22px;
+  min-width: 22px;
   height: 22px;
-  border-radius: 50%;
+  padding: 0 6px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+  animation: badgePop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 .downloads-panel {
   position: absolute;
-  bottom: 60px;
+  bottom: 70px;
   right: 0;
-  width: 380px;
+  width: 400px;
   max-width: calc(100vw - 40px);
-  max-height: 400px;
+  max-height: 450px;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.2s ease;
+  animation: panelSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+  background: rgba(15, 52, 96, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@keyframes slideUp {
+@keyframes panelSlide {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -463,8 +492,8 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--bg-secondary);
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .panel-header h3 {
@@ -476,48 +505,54 @@ onUnmounted(() => {
 .tabs {
   display: flex;
   gap: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  border-radius: 10px;
 }
 
 .tab-btn {
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .tab-btn:hover {
-  background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
 .tab-btn.active {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(108, 99, 255, 0.3);
 }
 
 .tab-badge {
-  font-size: 0.7rem;
-  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.65rem;
+  background: rgba(255, 255, 255, 0.25);
   padding: 2px 6px;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
 }
 
 .tab-btn:not(.active) .tab-badge {
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
 }
 
 .tab-btn:not(.active) .tab-badge.history-badge {
-  background: var(--bg-tertiary, var(--bg-secondary));
+  background: rgba(78, 205, 196, 0.2);
+  color: var(--success);
 }
 
 .header-actions {
@@ -527,25 +562,29 @@ onUnmounted(() => {
 }
 
 .clear-btn {
-  padding: 4px 10px;
-  border-radius: 4px;
-  background: var(--bg-secondary);
-  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .clear-btn:hover {
-  background: var(--accent);
-  color: white;
+  background: rgba(255, 107, 107, 0.15);
+  border-color: rgba(255, 107, 107, 0.3);
+  color: var(--error);
 }
 
 .close-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -553,66 +592,111 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  transition: all 0.2s ease;
 }
 
 .close-btn:hover {
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
 }
 
 .downloads-list {
   overflow-y: auto;
-  max-height: 300px;
+  max-height: 320px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+/* Custom scrollbar */
+.downloads-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.downloads-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.downloads-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.downloads-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .download-item {
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 14px;
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+  animation: itemSlide 0.3s ease;
+}
+
+.download-item:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes itemSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .download-info {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  gap: 12px;
 }
 
 .download-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
   min-width: 0;
 }
 
 .platform-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
 }
 
 .platform-dot.youtube {
   background: var(--youtube);
+  box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
 }
 
 .platform-dot.twitter {
   background: var(--twitter);
+  box-shadow: 0 0 8px rgba(29, 161, 242, 0.5);
 }
 
 .platform-dot.tiktok {
   background: linear-gradient(45deg, #00f2ea, #ff0050);
+  box-shadow: 0 0 8px rgba(255, 0, 80, 0.5);
 }
 
 .platform-dot.instagram {
   background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  box-shadow: 0 0 8px rgba(220, 39, 67, 0.5);
 }
 
 .title-text {
@@ -622,65 +706,114 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .download-status {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   font-size: 0.75rem;
   color: var(--text-secondary);
   flex-shrink: 0;
+  align-items: center;
 }
 
 .download-status .percent {
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.download-status .speed {
+  padding: 2px 6px;
+  background: rgba(108, 99, 255, 0.15);
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+.download-status .eta {
+  opacity: 0.7;
 }
 
 .completed-text {
   color: var(--success);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.completed-text::before {
+  content: '✓';
+  font-size: 0.9em;
 }
 
 .cancelled-text,
 .cancelling-text {
   color: var(--text-secondary);
+  opacity: 0.7;
 }
 
 .error-text {
   color: var(--error);
+  font-weight: 500;
 }
 
 .processing-text,
 .starting-text {
   color: var(--accent);
+  animation: textPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .download-progress {
-  height: 4px;
-  background: var(--bg-primary);
-  border-radius: 2px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.download-progress::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .download-progress .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #a855f7);
-  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), #a855f7, var(--accent));
+  background-size: 200% 100%;
+  border-radius: 3px;
   transition: width 0.3s ease;
+  animation: gradientMove 2s linear infinite;
+  position: relative;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }
 
 .download-progress .progress-fill.processing {
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: gradientMove 2s linear infinite, processingPulse 1s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+@keyframes processingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .download-actions {
@@ -690,54 +823,86 @@ onUnmounted(() => {
 }
 
 .action-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  transition: all 0.2s ease;
 }
 
 .action-btn.download-btn {
-  background: var(--success);
+  background: linear-gradient(135deg, var(--success) 0%, #3db9b0 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(78, 205, 196, 0.3);
 }
 
 .action-btn.download-btn:hover {
-  background: #3db9b0;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
 }
 
 .action-btn.cancel-btn {
-  background: var(--error);
-  color: white;
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--error);
+  border: 1px solid rgba(255, 107, 107, 0.3);
 }
 
 .action-btn.cancel-btn:hover {
-  background: #e55555;
+  background: var(--error);
+  color: white;
+  transform: scale(1.1);
 }
 
 .empty-state {
   text-align: center;
-  padding: 30px;
+  padding: 40px 20px;
   color: var(--text-secondary);
+}
+
+.empty-icon {
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.empty-icon svg {
+  stroke: var(--accent);
+}
+
+.empty-state p {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+  opacity: 0.7;
+}
+
+.empty-hint {
+  font-size: 0.8rem;
+  opacity: 0.5;
 }
 
 /* History styles */
 .history-item {
-  padding: 10px 12px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.history-item:hover {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .history-item .download-info {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .download-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
@@ -745,40 +910,48 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .status-icon.completed {
-  background: var(--success);
+  background: linear-gradient(135deg, var(--success) 0%, #3db9b0 100%);
   color: white;
+  box-shadow: 0 2px 6px rgba(78, 205, 196, 0.3);
 }
 
 .status-icon.cancelled {
-  background: var(--text-secondary);
-  color: white;
+  background: rgba(160, 160, 176, 0.3);
+  color: var(--text-secondary);
 }
 
 .status-icon.error {
-  background: var(--error);
+  background: linear-gradient(135deg, var(--error) 0%, #ee5a5a 100%);
   color: white;
+  box-shadow: 0 2px 6px rgba(255, 107, 107, 0.3);
 }
 
 .size-text {
   font-size: 0.75rem;
   color: var(--text-secondary);
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
 }
 
 .history-details {
   display: flex;
   justify-content: flex-end;
+  margin-top: 4px;
 }
 
 .history-time {
   font-size: 0.7rem;
   color: var(--text-secondary);
-  opacity: 0.8;
+  opacity: 0.6;
+  font-weight: 500;
 }
 
 @media (max-width: 480px) {
