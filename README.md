@@ -144,6 +144,54 @@ npm run build
 
 2. Serve the built files with the Flask backend or a web server like Nginx.
 
+### Docker Deployment
+
+Deploy Downloadix using Docker Compose (perfect for Portainer/TrueNAS).
+
+#### Quick Start with Docker
+
+```bash
+# Clone the repository
+git clone https://github.com/1nis/Downloadix.git
+cd Downloadix
+
+# Build and start containers
+docker-compose up -d --build
+
+# Access the application
+# Open http://localhost:8080 in your browser
+```
+
+#### Deploy on Portainer (TrueNAS)
+
+1. In Portainer, go to **Stacks** > **Add stack**
+2. Choose **Repository** and enter the Git repository URL, or
+3. Choose **Web editor** and paste the content of `docker-compose.portainer.yml`
+4. Adjust the volume path to match your TrueNAS storage:
+   ```yaml
+   volumes:
+     - /mnt/pool/appdata/downloadix/downloads:/app/downloads
+   ```
+5. Click **Deploy the stack**
+
+#### Docker Configuration
+
+| Service | Port | Description |
+|---------|------|-------------|
+| frontend | 8080 | Web interface (Nginx) |
+| backend | 5000 | API server (internal) |
+
+**Environment Variables (Backend):**
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DOWNLOAD_FOLDER` | `/app/downloads` | Download directory path |
+| `FLASK_ENV` | `production` | Flask environment |
+
+**Volumes:**
+| Container Path | Description |
+|----------------|-------------|
+| `/app/downloads` | Downloaded files storage |
+
 ## Usage
 
 1. **Paste a URL**: Enter a video URL from YouTube, X/Twitter, TikTok, or Instagram in the input field and click "Fetch".
@@ -208,6 +256,7 @@ npm run build
 Downloadix/
 ├── backend/
 │   ├── app.py              # Flask backend
+│   ├── Dockerfile          # Backend Docker image
 │   ├── requirements.txt    # Python dependencies
 │   ├── settings.json       # User settings (auto-generated)
 │   └── downloads/          # Default download folder
@@ -224,9 +273,13 @@ Downloadix/
 │   │       ├── ProgressBar.vue      # Progress bar component
 │   │       ├── Settings.vue         # Settings panel
 │   │       └── DownloadsManager.vue # Downloads manager panel
+│   ├── Dockerfile          # Frontend Docker image (multi-stage)
+│   ├── nginx.conf          # Nginx configuration
 │   ├── index.html
 │   ├── package.json
 │   └── vite.config.js
+├── docker-compose.yml      # Docker Compose configuration
+├── docker-compose.portainer.yml  # Portainer-ready configuration
 ├── start.bat               # Windows batch launcher
 ├── start.ps1               # PowerShell launcher
 └── README.md
@@ -234,9 +287,10 @@ Downloadix/
 
 ## Technologies
 
-- **Backend**: Flask, yt-dlp, requests
-- **Frontend**: Vue 3, Vite
+- **Backend**: Flask, yt-dlp, Gunicorn
+- **Frontend**: Vue 3, Vite, Nginx
 - **Streaming**: Server-Sent Events (SSE) for real-time progress
+- **Containerization**: Docker, Docker Compose
 
 ## Notes
 

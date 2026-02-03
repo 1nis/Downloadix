@@ -13,11 +13,12 @@ app = Flask(__name__)
 CORS(app)
 
 # Settings file path
-SETTINGS_FILE = os.path.join(os.path.dirname(__file__), 'settings.json')
+SETTINGS_FILE = os.environ.get('SETTINGS_FILE', os.path.join(os.path.dirname(__file__), 'settings.json'))
 
-# Default settings
+# Default settings - use environment variable if set, otherwise use local folder
+DEFAULT_DOWNLOAD_FOLDER = os.environ.get('DOWNLOAD_FOLDER', os.path.join(os.path.dirname(__file__), 'downloads'))
 DEFAULT_SETTINGS = {
-    'download_folder': os.path.join(os.path.dirname(__file__), 'downloads')
+    'download_folder': DEFAULT_DOWNLOAD_FOLDER
 }
 
 # In-memory storage for download progress and control
