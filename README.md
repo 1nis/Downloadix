@@ -5,6 +5,10 @@ A modern web application for downloading videos from YouTube, X/Twitter, TikTok,
 ## Features
 
 - **Multi-platform support**: Download videos from YouTube, X/Twitter, TikTok, and Instagram
+- **Video & Audio downloads**:
+  - Download videos in MP4 format
+  - Download audio only in MP3 format (192 kbps)
+- **Thumbnail download**: Download video thumbnails with one click
 - **Real-time download progress** with:
   - Progress bar with percentage
   - Downloaded size / Total size
@@ -17,15 +21,17 @@ A modern web application for downloading videos from YouTube, X/Twitter, TikTok,
   - Cancel any download in progress
   - Re-download completed files
   - Clear completed downloads
+  - Download history
 - **Quality selection** (360p, 480p, 720p, 1080p, etc.)
 - **Configurable download folder**
 - **Clean and modern UI**
+- **One-click launch**: Start both servers with a single script
 
 ## Requirements
 
 - Python 3.8+
 - Node.js 16+
-- FFmpeg (required for merging video/audio streams)
+- FFmpeg (required for merging video/audio streams and MP3 conversion)
 
 ### Installing FFmpeg
 
@@ -88,7 +94,29 @@ npm install
 
 ## Running the Application
 
-### Development Mode
+### Quick Start (Recommended)
+
+Use the provided launch scripts to start both servers at once:
+
+**Windows (Batch):**
+```bash
+# Double-click start.bat or run:
+start.bat
+```
+
+**Windows (PowerShell):**
+```powershell
+powershell -ExecutionPolicy Bypass -File start.ps1
+```
+
+The script will:
+1. Check that Python and Node.js are installed
+2. Start the backend server (port 5000)
+3. Start the frontend server (port 3000)
+4. Open your browser automatically
+5. Press any key to stop both servers
+
+### Manual Start (Development Mode)
 
 1. Start the backend server (in one terminal):
 ```bash
@@ -102,9 +130,9 @@ The backend will run on http://localhost:5000
 cd frontend
 npm run dev
 ```
-The frontend will run on http://localhost:5173
+The frontend will run on http://localhost:3000
 
-3. Open your browser and navigate to http://localhost:5173
+3. Open your browser and navigate to http://localhost:3000
 
 ### Production Build
 
@@ -122,23 +150,30 @@ npm run build
 
 2. **Select Quality**: Choose the video quality from the available options.
 
-3. **Download**: Click the "Download Video" button. You'll see real-time progress including:
+3. **Download Video or Audio**:
+   - Click **"Video"** to download the video in MP4 format
+   - Click **"MP3"** to download audio only in MP3 format
+
+4. **Download Thumbnail**: Hover over the video thumbnail and click the image icon to download the thumbnail.
+
+5. **Monitor Progress**: You'll see real-time progress including:
    - Download percentage
    - Downloaded size / Total size
    - Current download speed
    - Estimated time remaining
 
-4. **Cancel a Download**: While downloading, click the "Cancel" button to abort the download.
+6. **Cancel a Download**: While downloading, click the "Cancel" button to abort the download.
 
-5. **Multiple Downloads**: You can start multiple downloads simultaneously. Use the Downloads Manager (floating button at bottom-right) to monitor and manage all downloads.
+7. **Multiple Downloads**: You can start multiple downloads simultaneously. Use the Downloads Manager (floating button at bottom-right) to monitor and manage all downloads.
 
-6. **Downloads Manager**: Click the download icon at the bottom-right corner to:
+8. **Downloads Manager**: Click the download icon at the bottom-right corner to:
    - See all active and completed downloads
    - Cancel any download in progress
    - Download completed files again
    - Clear completed/cancelled downloads from the list
+   - View download history
 
-7. **Configure Download Folder** (optional): Click the settings icon (gear) in the top-right corner to change where videos are saved.
+9. **Configure Download Folder** (optional): Click the settings icon (gear) in the top-right corner to change where videos are saved.
 
 ## Supported Platforms
 
@@ -154,12 +189,15 @@ npm run build
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/info` | GET | Get video information from URL |
-| `/api/download/start` | POST | Start a download and get download ID |
+| `/api/download/start` | POST | Start a download (supports `audio_only` param) |
 | `/api/download/progress/<id>` | GET | SSE endpoint for download progress |
 | `/api/download/cancel/<id>` | POST | Cancel an ongoing download |
 | `/api/download/file/<id>` | GET | Download the completed file |
+| `/api/download/thumbnail` | POST | Download video thumbnail |
 | `/api/download/list` | GET | List all active and recent downloads |
 | `/api/download/clear` | POST | Clear completed/cancelled downloads |
+| `/api/download/history` | GET | Get download history |
+| `/api/download/history/clear` | POST | Clear download history |
 | `/api/settings` | GET | Get current settings |
 | `/api/settings` | POST | Update settings |
 | `/api/health` | GET | Health check |
@@ -181,20 +219,22 @@ Downloadix/
 │   │   │   └── style.css   # Global styles
 │   │   └── components/
 │   │       ├── VideoForm.vue        # URL input form
-│   │       ├── VideoPreview.vue     # Video preview card
-│   │       ├── DownloadBtn.vue      # Download button with progress
+│   │       ├── VideoPreview.vue     # Video preview with thumbnail download
+│   │       ├── DownloadBtn.vue      # Video & MP3 download buttons
 │   │       ├── ProgressBar.vue      # Progress bar component
 │   │       ├── Settings.vue         # Settings panel
-│   │       └── DownloadsManager.vue # Multiple downloads manager
+│   │       └── DownloadsManager.vue # Downloads manager panel
 │   ├── index.html
 │   ├── package.json
 │   └── vite.config.js
+├── start.bat               # Windows batch launcher
+├── start.ps1               # PowerShell launcher
 └── README.md
 ```
 
 ## Technologies
 
-- **Backend**: Flask, yt-dlp
+- **Backend**: Flask, yt-dlp, requests
 - **Frontend**: Vue 3, Vite
 - **Streaming**: Server-Sent Events (SSE) for real-time progress
 
@@ -202,6 +242,7 @@ Downloadix/
 
 - **Instagram**: Some Instagram content may require login. Public posts should work without authentication.
 - **TikTok**: Works with public videos.
+- **MP3 Conversion**: Requires FFmpeg for audio extraction and conversion.
 - **Rate Limiting**: Be mindful of rate limits when downloading many videos in quick succession.
 
 ## License
