@@ -39,8 +39,7 @@ services:
     container_name: downloadix-frontend
     restart: unless-stopped
     ports:
-      # Change 8080 to your desired port
-      - "8080:80"
+      - "2084:80"
     depends_on:
       backend:
         condition: service_healthy

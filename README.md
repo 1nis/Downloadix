@@ -159,7 +159,7 @@ cd Downloadix
 docker-compose up -d --build
 
 # Access the application
-# Open http://localhost:8080 in your browser
+# Open http://localhost:2084 in your browser
 ```
 
 #### Deploy on Portainer (TrueNAS)
@@ -178,7 +178,7 @@ docker-compose up -d --build
 
 | Service | Port | Description |
 |---------|------|-------------|
-| frontend | 8080 | Web interface (Nginx) |
+| frontend | 2084 | Web interface (Nginx) |
 | backend | 5000 | API server (internal) |
 
 **Environment Variables (Backend):**
