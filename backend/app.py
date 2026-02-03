@@ -492,6 +492,56 @@ def download_file(download_id):
         download_name=filename
     )
 
+@app.route('/api/download/thumbnail', methods=['POST'])
+def download_thumbnail():
+    """Download thumbnail image from URL."""
+    import requests
+
+    data = request.get_json()
+    thumbnail_url = data.get('url')
+    title = data.get('title', 'thumbnail')
+
+    if not thumbnail_url:
+        return jsonify({'error': 'Thumbnail URL is required'}), 400
+
+    try:
+        # Download the thumbnail
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        response = requests.get(thumbnail_url, headers=headers, timeout=30)
+        response.raise_for_status()
+
+        # Determine extension from content type
+        content_type = response.headers.get('Content-Type', 'image/jpeg')
+        ext = '.jpg'
+        if 'png' in content_type:
+            ext = '.png'
+        elif 'webp' in content_type:
+            ext = '.webp'
+        elif 'gif' in content_type:
+            ext = '.gif'
+
+        # Save to downloads directory
+        downloads_dir = get_downloads_dir()
+        safe_title = re.sub(r'[<>:"/\\|?*]', '', title)[:100]
+        filename = f"{safe_title}_thumbnail{ext}"
+        filepath = os.path.join(downloads_dir, filename)
+
+        with open(filepath, 'wb') as f:
+            f.write(response.content)
+
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Failed to download thumbnail: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
     """Get current settings."""
