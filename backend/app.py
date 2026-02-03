@@ -7,6 +7,7 @@ import uuid
 import threading
 import time
 import json
+import requests as http_requests
 
 app = Flask(__name__)
 CORS(app)
@@ -219,6 +220,7 @@ def start_download():
     url = data.get('url')
     format_id = data.get('format', 'best')
     title = data.get('title', 'Unknown')
+    audio_only = data.get('audio_only', False)
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
@@ -243,6 +245,7 @@ def start_download():
         'filename': None,
         'title': title,
         'platform': platform,
+        'audio_only': audio_only,
         'error': None
     }
 
@@ -291,14 +294,30 @@ def start_download():
             file_id = str(uuid.uuid4())
             output_template = os.path.join(downloads_dir, f'{file_id}.%(ext)s')
 
-            ydl_opts = {
-                'format': format_id,
-                'outtmpl': output_template,
-                'quiet': True,
-                'no_warnings': True,
-                'merge_output_format': 'mp4',
-                'progress_hooks': [progress_hook],
-            }
+            if audio_only:
+                # Audio-only download (MP3)
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'outtmpl': output_template,
+                    'quiet': True,
+                    'no_warnings': True,
+                    'progress_hooks': [progress_hook],
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
+                }
+            else:
+                # Video download
+                ydl_opts = {
+                    'format': format_id,
+                    'outtmpl': output_template,
+                    'quiet': True,
+                    'no_warnings': True,
+                    'merge_output_format': 'mp4',
+                    'progress_hooks': [progress_hook],
+                }
 
             # Add headers for Instagram/TikTok
             if platform in ['instagram', 'tiktok']:
@@ -365,7 +384,8 @@ def start_download():
     return jsonify({
         'download_id': download_id,
         'title': title,
-        'platform': platform
+        'platform': platform,
+        'audio_only': audio_only
     })
 
 @app.route('/api/download/cancel/<download_id>', methods=['POST'])
@@ -495,8 +515,6 @@ def download_file(download_id):
 @app.route('/api/download/thumbnail', methods=['POST'])
 def download_thumbnail():
     """Download thumbnail image from URL."""
-    import requests
-
     data = request.get_json()
     thumbnail_url = data.get('url')
     title = data.get('title', 'thumbnail')
@@ -509,7 +527,7 @@ def download_thumbnail():
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
-        response = requests.get(thumbnail_url, headers=headers, timeout=30)
+        response = http_requests.get(thumbnail_url, headers=headers, timeout=30)
         response.raise_for_status()
 
         # Determine extension from content type
@@ -537,7 +555,7 @@ def download_thumbnail():
             download_name=filename
         )
 
-    except requests.exceptions.RequestException as e:
+    except http_requests.exceptions.RequestException as e:
         return jsonify({'error': f'Failed to download thumbnail: {str(e)}'}), 400
     except Exception as e:
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500

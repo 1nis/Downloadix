@@ -24,22 +24,41 @@
       </button>
     </div>
 
-    <button
-      v-if="!showProgress || !canCancel"
-      class="btn btn-download"
-      :disabled="disabled || downloading"
-      @click="handleDownload"
-    >
-      <span v-if="downloading && !showProgress" class="spinner"></span>
-      <span v-else-if="!downloading">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-      </span>
-      {{ buttonText }}
-    </button>
+    <div class="download-buttons" v-if="!showProgress || !canCancel">
+      <!-- Video Download Button -->
+      <button
+        class="btn btn-download btn-video"
+        :disabled="disabled || downloading"
+        @click="handleDownload(false)"
+      >
+        <span v-if="downloading && !isAudioDownload && !showProgress" class="spinner"></span>
+        <span v-else-if="!downloading || isAudioDownload">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </span>
+        {{ videoButtonText }}
+      </button>
+
+      <!-- MP3 Download Button -->
+      <button
+        class="btn btn-download btn-audio"
+        :disabled="disabled || downloading"
+        @click="handleDownload(true)"
+      >
+        <span v-if="downloading && isAudioDownload && !showProgress" class="spinner"></span>
+        <span v-else-if="!downloading || !isAudioDownload">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+          </svg>
+        </span>
+        {{ audioButtonText }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -69,6 +88,7 @@ const props = defineProps({
 const emit = defineEmits(['download-start', 'download-complete', 'download-error', 'download-added'])
 
 const downloading = ref(false)
+const isAudioDownload = ref(false)
 const showProgress = ref(false)
 const progressStatus = ref('starting')
 const progressPercent = ref(0)
@@ -83,10 +103,19 @@ const canCancel = computed(() => {
   return ['downloading', 'starting', 'processing'].includes(progressStatus.value)
 })
 
-const buttonText = computed(() => {
-  if (!downloading.value) return 'Download Video'
-  if (progressStatus.value === 'completed') return 'Saving file...'
+const videoButtonText = computed(() => {
+  if (!downloading.value || isAudioDownload.value) return 'Video'
+  if (progressStatus.value === 'completed') return 'Saving...'
   if (progressStatus.value === 'processing') return 'Processing...'
+  if (progressStatus.value === 'cancelled') return 'Cancelled'
+  if (showProgress.value) return 'Downloading...'
+  return 'Starting...'
+})
+
+const audioButtonText = computed(() => {
+  if (!downloading.value || !isAudioDownload.value) return 'MP3'
+  if (progressStatus.value === 'completed') return 'Saving...'
+  if (progressStatus.value === 'processing') return 'Converting...'
   if (progressStatus.value === 'cancelled') return 'Cancelled'
   if (showProgress.value) return 'Downloading...'
   return 'Starting...'
@@ -122,10 +151,11 @@ const handleCancel = async () => {
   }
 }
 
-const handleDownload = async () => {
+const handleDownload = async (audioOnly = false) => {
   if (downloading.value || props.disabled) return
 
   downloading.value = true
+  isAudioDownload.value = audioOnly
   showProgress.value = false
   resetProgress()
   emit('download-start')
@@ -140,7 +170,8 @@ const handleDownload = async () => {
       body: JSON.stringify({
         url: props.url,
         format: props.format,
-        title: props.title
+        title: props.title,
+        audio_only: audioOnly
       })
     })
 
@@ -215,7 +246,7 @@ const handleDownload = async () => {
 
     // Get filename from Content-Disposition header
     const contentDisposition = fileResponse.headers.get('Content-Disposition')
-    let filename = 'video.mp4'
+    let filename = isAudioDownload.value ? 'audio.mp3' : 'video.mp4'
     if (contentDisposition) {
       const filenameMatch = contentDisposition.match(/filename\*?=['"]?(?:UTF-8'')?([^;\r\n"']*)['"]?/i)
       if (filenameMatch) {
@@ -258,6 +289,30 @@ const handleDownload = async () => {
   margin-top: 12px;
 }
 
+.download-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.btn-video {
+  flex: 2;
+  background: linear-gradient(90deg, var(--accent), #a855f7);
+}
+
+.btn-video:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+}
+
+.btn-audio {
+  flex: 1;
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.btn-audio:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
 .btn-cancel {
   flex: 1;
   justify-content: center;
@@ -273,5 +328,16 @@ const handleDownload = async () => {
 .btn-cancel:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .download-buttons {
+    flex-direction: column;
+  }
+
+  .btn-video,
+  .btn-audio {
+    flex: 1;
+  }
 }
 </style>
