@@ -9,6 +9,7 @@ A modern web application for downloading videos from YouTube, X/Twitter, TikTok,
   - Download videos in MP4 format
   - Download audio only in MP3 format (192 kbps)
 - **Thumbnail download**: Download video thumbnails with one click
+- **Auto-download to browser**: Files are automatically sent to your browser when ready
 - **Real-time download progress** with:
   - Progress bar with percentage
   - Downloaded size / Total size
@@ -21,10 +22,9 @@ A modern web application for downloading videos from YouTube, X/Twitter, TikTok,
   - Cancel any download in progress
   - Re-download completed files
   - Clear completed downloads
-  - Download history
+  - Download history with thumbnails
 - **Quality selection** (360p, 480p, 720p, 1080p, etc.)
-- **Configurable download folder**
-- **Clean and modern UI**
+- **Modern UI**: Dark theme with glassmorphism design, neon accents, and smooth animations
 - **One-click launch**: Start both servers with a single script
 
 ## Requirements
@@ -221,7 +221,7 @@ docker-compose up -d --build
    - Clear completed/cancelled downloads from the list
    - View download history
 
-9. **Configure Download Folder** (optional): Click the settings icon (gear) in the top-right corner to change where videos are saved.
+
 
 ## Supported Platforms
 
@@ -246,8 +246,6 @@ docker-compose up -d --build
 | `/api/download/clear` | POST | Clear completed/cancelled downloads |
 | `/api/download/history` | GET | Get download history |
 | `/api/download/history/clear` | POST | Clear download history |
-| `/api/settings` | GET | Get current settings |
-| `/api/settings` | POST | Update settings |
 | `/api/health` | GET | Health check |
 
 ## Project Structure
