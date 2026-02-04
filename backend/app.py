@@ -114,15 +114,15 @@ def format_bytes(bytes_value):
     return f"{bytes_value:.0f} B"
 
 def cleanup_old_files():
-    """Remove files older than 1 hour from downloads directory."""
+    """Remove files older than 30 minutes from downloads directory."""
     while True:
-        time.sleep(3600)  # Check every hour
+        time.sleep(60)  # Check every minute
         now = time.time()
         downloads_dir = get_downloads_dir()
         for filename in os.listdir(downloads_dir):
             filepath = os.path.join(downloads_dir, filename)
             if os.path.isfile(filepath):
-                if now - os.path.getmtime(filepath) > 3600:
+                if now - os.path.getmtime(filepath) > 1800:  # 30 minutes
                     try:
                         os.remove(filepath)
                     except Exception:

@@ -210,6 +210,7 @@ const downloads = ref([])
 const history = ref([])
 const activeTab = ref('downloads')
 let pollInterval = null
+const autoDownloaded = new Set() // Track downloads already sent to browser
 
 const activeCount = computed(() => {
   return downloads.value.filter(d =>
@@ -239,7 +240,23 @@ const fetchDownloads = async () => {
   try {
     const response = await fetch('/api/download/list')
     if (response.ok) {
-      downloads.value = await response.json()
+      const newDownloads = await response.json()
+      
+      // Check for newly completed downloads and auto-trigger browser download
+      for (const newDl of newDownloads) {
+        if (newDl.status === 'completed') {
+          const oldDl = downloads.value.find(d => d.id === newDl.id)
+          // Only trigger if status just changed to completed (wasn't completed before)
+          // and hasn't been auto-downloaded yet
+          if (oldDl && oldDl.status !== 'completed' && !autoDownloaded.has(newDl.id)) {
+            autoDownloaded.add(newDl.id)
+            // Small delay to ensure file is ready
+            setTimeout(() => downloadFile(newDl.id), 500)
+          }
+        }
+      }
+      
+      downloads.value = newDownloads
     }
   } catch (error) {
     console.error('Failed to fetch downloads:', error)
