@@ -1,52 +1,31 @@
 version: '3.8'
 
 services:
-  # Backend Flask API
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
     container_name: downloadix-backend
     restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      # REMPLACEZ '/mnt/votre_pool/downloads' par votre vrai chemin TrueNAS
+      - /mnt/votre_pool/downloads:/app/downloads
+      - backend_settings:/app
     environment:
       - FLASK_ENV=production
-      - PYTHONUNBUFFERED=1
-    volumes:
-      # Mount downloads folder - adjust the host path as needed
-      - downloadix_downloads:/app/downloads
-      # Optional: mount settings file for persistence
-      - downloadix_settings:/app/settings
-    networks:
-      - downloadix-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
-  # Frontend Vue.js with Nginx
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=/api
     container_name: downloadix-frontend
     restart: unless-stopped
     ports:
-      - "2084:80"
+      - "3000:80"
     depends_on:
       - backend
-    networks:
-      - downloadix-network
-
-networks:
-  downloadix-network:
-    driver: bridge
+    environment:
+      - VITE_API_URL=http://IP_DE_VOTRE_TRUENAS:5000
 
 volumes:
-  downloadix_downloads:
-    driver: local
-  downloadix_settings:
-    driver: local
+  backend_settings:
