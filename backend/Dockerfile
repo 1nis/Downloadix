@@ -36,5 +36,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:5000/api/health || exit 1
 
 # Run the application with gunicorn for production
-# --timeout 300 for long downloads, --workers 4 for concurrency
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "--timeout", "300", "app:app"]
+# --workers 1 is required because we use in-memory state for download tracking
+# --threads 8 provides concurrency within the single process
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "8", "--timeout", "300", "app:app"]

@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <Settings />
+
     <DownloadsManager ref="downloadsManager" />
 
     <header class="header">
@@ -39,6 +39,8 @@
         :url="currentUrl"
         :format="selectedFormat"
         :title="videoInfo?.title || 'Unknown'"
+        :thumbnail="videoInfo?.thumbnail || ''"
+        :quality="getQualityLabel(selectedFormat)"
         :disabled="!videoInfo"
         @download-start="handleDownloadStart"
         @download-complete="handleDownloadComplete"
@@ -58,7 +60,7 @@ import { ref } from 'vue'
 import VideoForm from './components/VideoForm.vue'
 import VideoPreview from './components/VideoPreview.vue'
 import DownloadBtn from './components/DownloadBtn.vue'
-import Settings from './components/Settings.vue'
+
 import DownloadsManager from './components/DownloadsManager.vue'
 
 const videoForm = ref(null)
@@ -97,6 +99,17 @@ const fetchVideoInfo = async (url) => {
 
 const handleFormatSelected = (formatId) => {
   selectedFormat.value = formatId
+}
+
+const getQualityLabel = (formatId) => {
+  // Extract quality from format like "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
+  const match = formatId.match(/height<=(\d+)/)
+  if (match) {
+    return match[1] + 'p'
+  }
+  // Check videoInfo formats for quality label
+  const format = videoInfo.value?.formats?.find(f => f.format_id === formatId)
+  return format?.quality || 'best'
 }
 
 const handleDownloadStart = () => {

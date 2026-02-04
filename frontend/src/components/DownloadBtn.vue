@@ -82,6 +82,14 @@ const props = defineProps({
   title: {
     type: String,
     default: 'Unknown'
+  },
+  thumbnail: {
+    type: String,
+    default: ''
+  },
+  quality: {
+    type: String,
+    default: 'best'
   }
 })
 
@@ -171,7 +179,9 @@ const handleDownload = async (audioOnly = false) => {
         url: props.url,
         format: props.format,
         title: props.title,
-        audio_only: audioOnly
+        audio_only: audioOnly,
+        thumbnail: props.thumbnail,
+        quality: props.quality
       })
     })
 

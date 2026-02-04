@@ -155,35 +155,42 @@
           class="download-item history-item"
           :class="item.status"
         >
-          <div class="download-info">
-            <div class="download-title">
-              <span :class="['platform-dot', item.platform]"></span>
-              <span class="title-text">{{ truncateTitle(item.title) }}</span>
-            </div>
-            <div class="download-meta">
-              <span v-if="item.status === 'completed'" class="status-icon completed">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </span>
-              <span v-else-if="item.status === 'cancelled'" class="status-icon cancelled">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </span>
-              <span v-else-if="item.status === 'error'" class="status-icon error" :title="item.error">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-              </span>
-              <span class="size-text" v-if="item.total_str && item.status === 'completed'">{{ item.total_str }}</span>
-            </div>
+          <!-- Thumbnail -->
+          <div class="history-thumbnail" v-if="item.thumbnail">
+            <img :src="item.thumbnail" :alt="item.title" @error="handleImageError" />
           </div>
-          <div class="history-details">
-            <span class="history-time">{{ formatHistoryTime(item.completed_at) }}</span>
+          <div class="history-thumbnail placeholder" v-else>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+              <line x1="7" y1="2" x2="7" y2="22"/>
+              <line x1="17" y1="2" x2="17" y2="22"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <line x1="2" y1="7" x2="7" y2="7"/>
+              <line x1="2" y1="17" x2="7" y2="17"/>
+              <line x1="17" y1="17" x2="22" y2="17"/>
+              <line x1="17" y1="7" x2="22" y2="7"/>
+            </svg>
+          </div>
+          
+          <!-- Content -->
+          <div class="history-content">
+            <div class="history-header">
+              <span :class="['format-badge', item.audio_only ? 'audio' : 'video']">
+                {{ item.audio_only ? 'MP3' : 'Video' }}
+              </span>
+              <span class="quality-badge" v-if="!item.audio_only && item.quality">
+                {{ item.quality }}
+              </span>
+              <span v-if="item.status === 'completed'" class="status-icon completed">✓</span>
+              <span v-else-if="item.status === 'cancelled'" class="status-icon cancelled">✕</span>
+              <span v-else-if="item.status === 'error'" class="status-icon error" :title="item.error">!</span>
+            </div>
+            <div class="history-title">{{ item.title }}</div>
+            <div class="history-footer">
+              <span :class="['platform-tag', item.platform]">{{ platformLabel(item.platform) }}</span>
+              <span class="size-text" v-if="item.total_str && item.status === 'completed'">{{ item.total_str }}</span>
+              <span class="history-time">{{ formatHistoryTime(item.completed_at) }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -364,6 +371,20 @@ const formatHistoryTime = (dateStr) => {
   }
   // Older
   return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+const platformLabel = (platform) => {
+  const labels = {
+    youtube: 'YouTube',
+    twitter: 'X',
+    tiktok: 'TikTok',
+    instagram: 'Instagram'
+  }
+  return labels[platform] || platform
+}
+
+const handleImageError = (e) => {
+  e.target.style.display = 'none'
 }
 
 // Expose method for parent to add download
@@ -969,6 +990,132 @@ onUnmounted(() => {
   color: var(--text-secondary);
   opacity: 0.6;
   font-weight: 500;
+}
+
+/* New History Layout Styles */
+.history-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px !important;
+}
+
+.history-thumbnail {
+  width: 80px;
+  height: 45px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.history-thumbnail.placeholder {
+  color: var(--text-secondary);
+  opacity: 0.4;
+}
+
+.history-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.format-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.format-badge.video {
+  background: linear-gradient(135deg, var(--accent), #a855f7);
+  color: white;
+}
+
+.format-badge.audio {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.quality-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+.history-header .status-icon {
+  font-size: 0.7rem;
+  font-weight: bold;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.history-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+  /* Allow full title to wrap */
+  word-break: break-word;
+}
+
+.history-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.platform-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.platform-tag.youtube {
+  background: rgba(255, 0, 0, 0.15);
+  color: #ff4444;
+}
+
+.platform-tag.twitter {
+  background: rgba(29, 161, 242, 0.15);
+  color: #1da1f2;
+}
+
+.platform-tag.tiktok {
+  background: rgba(0, 0, 0, 0.15);
+  color: #69c9d0;
+}
+
+.platform-tag.instagram {
+  background: rgba(225, 48, 108, 0.15);
+  color: #e1306c;
 }
 
 @media (max-width: 480px) {

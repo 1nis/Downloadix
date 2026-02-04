@@ -222,6 +222,8 @@ def start_download():
     format_id = data.get('format', 'best')
     title = data.get('title', 'Unknown')
     audio_only = data.get('audio_only', False)
+    thumbnail = data.get('thumbnail', '')
+    quality = data.get('quality', 'best')
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
@@ -247,6 +249,9 @@ def start_download():
         'title': title,
         'platform': platform,
         'audio_only': audio_only,
+        'thumbnail': thumbnail,
+        'format': format_id,
+        'quality': quality,
         'error': None
     }
 
@@ -467,7 +472,11 @@ def clear_completed():
                 'total_str': data.get('total_str', '0 B'),
                 'filename': data.get('filename'),
                 'completed_at': time.strftime('%Y-%m-%d %H:%M:%S'),
-                'error': data.get('error')
+                'error': data.get('error'),
+                'thumbnail': data.get('thumbnail', ''),
+                'format': data.get('format', 'best'),
+                'quality': data.get('quality', 'best'),
+                'audio_only': data.get('audio_only', False)
             }
             download_history.insert(0, history_entry)
 
