@@ -6,12 +6,12 @@ services:
       context: ./backend
     container_name: downloadix-backend
     restart: unless-stopped
-    ports:
-      - "5000:5000"
+    # Le backend reste sur son port interne 5000, 
+    # il n'a pas besoin d'être exposé vers l'extérieur.
+    expose:
+      - "5000"
     volumes:
-      # REMPLACEZ '/mnt/votre_pool/downloads' par votre vrai chemin TrueNAS
       - /mnt/votre_pool/downloads:/app/downloads
-      - backend_settings:/app
     environment:
       - FLASK_ENV=production
 
@@ -21,11 +21,8 @@ services:
     container_name: downloadix-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "2034:80" # L'application sera accessible sur http://IP_TRUENAS:2034
     depends_on:
       - backend
     environment:
-      - VITE_API_URL=http://IP_DE_VOTRE_TRUENAS:5000
-
-volumes:
-  backend_settings:
+      - VITE_API_URL=http://backend:5000
