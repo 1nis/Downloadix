@@ -1,5 +1,22 @@
 <template>
-  <div class="card video-preview" v-if="videoInfo">
+  <!-- Skeleton Loading State -->
+  <div class="card video-preview skeleton-preview" v-if="loading">
+    <div class="thumbnail-container skeleton-thumbnail">
+      <div class="skeleton skeleton-image"></div>
+      <div class="skeleton skeleton-badge-platform"></div>
+      <div class="skeleton skeleton-badge-duration"></div>
+    </div>
+    <div class="skeleton skeleton-title"></div>
+    <div class="skeleton skeleton-uploader"></div>
+    <div class="skeleton-quality-options">
+      <div class="skeleton skeleton-quality-pill"></div>
+      <div class="skeleton skeleton-quality-pill"></div>
+      <div class="skeleton skeleton-quality-pill"></div>
+    </div>
+  </div>
+
+  <!-- Actual Content -->
+  <div class="card video-preview" v-else-if="videoInfo">
     <div class="thumbnail-container">
       <img
         :src="videoInfo.thumbnail"
@@ -55,6 +72,10 @@ const props = defineProps({
   videoInfo: {
     type: Object,
     default: null
+  },
+  loading: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -187,5 +208,67 @@ const downloadThumbnail = async () => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Skeleton Styles */
+.skeleton-preview {
+  text-align: center;
+}
+
+.skeleton-thumbnail {
+  position: relative;
+  margin-bottom: 20px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.skeleton-image {
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  border-radius: var(--border-radius);
+}
+
+.skeleton-badge-platform {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 80px;
+  height: 30px;
+  border-radius: 20px;
+}
+
+.skeleton-badge-duration {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  width: 60px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 80%;
+  margin: 0 auto 12px;
+  border-radius: 6px;
+}
+
+.skeleton-uploader {
+  height: 18px;
+  width: 40%;
+  margin: 0 auto 20px;
+  border-radius: 6px;
+}
+
+.skeleton-quality-options {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.skeleton-quality-pill {
+  width: 70px;
+  height: 40px;
+  border-radius: 12px;
 }
 </style>

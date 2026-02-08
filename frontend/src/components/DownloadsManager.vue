@@ -34,21 +34,50 @@
           </button>
         </div>
         <div class="header-actions">
+          <!-- Compact Mode Toggle -->
+          <button
+            v-if="activeTab === 'downloads'"
+            class="compact-toggle"
+            @click="toggleCompactMode"
+            :title="isCompactMode ? 'Switch to full view' : 'Switch to compact view'"
+          >
+            <svg v-if="isCompactMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="3" y1="15" x2="21" y2="15"/>
+            </svg>
+            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/>
+              <line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/>
+              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          </button>
           <button
             v-if="activeTab === 'downloads' && completedCount > 0"
-            class="clear-btn"
+            class="clear-btn clear-all-btn"
             @click="clearCompleted"
-            title="Clear completed"
+            title="Clear all completed"
           >
-            Clear
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Clear All
           </button>
           <button
             v-if="activeTab === 'history' && history.length > 0"
-            class="clear-btn"
+            class="clear-btn clear-all-btn"
             @click="clearHistory"
-            title="Clear history"
+            title="Clear all history"
           >
-            Clear
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Clear All
           </button>
           <button class="close-btn" @click="togglePanel">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -60,12 +89,12 @@
       </div>
 
       <!-- Downloads Tab -->
-      <div v-if="activeTab === 'downloads'" class="downloads-list" v-show="downloads.length > 0">
+      <div v-if="activeTab === 'downloads'" class="downloads-list" :class="{ 'compact-mode': isCompactMode }" v-show="downloads.length > 0">
         <div
           v-for="download in downloads"
           :key="download.id"
           class="download-item"
-          :class="download.status"
+          :class="[download.status, { 'compact-item': isCompactMode }]"
         >
           <div class="download-info">
             <div class="download-title">
@@ -216,7 +245,13 @@ const isOpen = ref(false)
 const downloads = ref([])
 const history = ref([])
 const activeTab = ref('downloads')
+const isCompactMode = ref(localStorage.getItem('downloadix-compact-mode') === 'true')
 let pollInterval = null
+
+const toggleCompactMode = () => {
+  isCompactMode.value = !isCompactMode.value
+  localStorage.setItem('downloadix-compact-mode', isCompactMode.value.toString())
+}
 
 const activeCount = computed(() => {
   return downloads.value.filter(d =>
@@ -582,6 +617,26 @@ onUnmounted(() => {
   gap: 8px;
 }
 
+.compact-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.compact-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 .clear-btn {
   padding: 6px 12px;
   border-radius: 6px;
@@ -600,6 +655,22 @@ onUnmounted(() => {
   background: rgba(255, 107, 107, 0.15);
   border-color: rgba(255, 107, 107, 0.3);
   color: var(--error);
+}
+
+.clear-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid rgba(255, 107, 107, 0.3);
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--error);
+}
+
+.clear-all-btn:hover {
+  background: rgba(255, 107, 107, 0.25);
+  border-color: var(--error);
+  transform: translateY(-1px);
 }
 
 .close-btn {
@@ -1101,6 +1172,55 @@ onUnmounted(() => {
   color: #e1306c;
 }
 
+/* Compact Mode Styles */
+.downloads-list.compact-mode {
+  gap: 6px;
+}
+
+.download-item.compact-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.compact-item .download-info {
+  margin-bottom: 6px;
+}
+
+.compact-item .download-title {
+  gap: 8px;
+}
+
+.compact-item .title-text {
+  font-size: 0.85rem;
+}
+
+.compact-item .download-status {
+  font-size: 0.7rem;
+}
+
+.compact-item .download-status .percent {
+  font-size: 0.75rem;
+}
+
+.compact-item .download-progress {
+  height: 4px;
+  margin-bottom: 0;
+}
+
+.compact-item .download-actions {
+  display: none;
+}
+
+.compact-item:hover .download-actions {
+  display: flex;
+}
+
+.compact-item .action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
 @media (max-width: 480px) {
   .downloads-panel {
     width: calc(100vw - 40px);
@@ -1110,6 +1230,10 @@ onUnmounted(() => {
   .download-status {
     flex-direction: column;
     gap: 2px;
+  }
+
+  .compact-toggle {
+    display: none;
   }
 }
 </style>

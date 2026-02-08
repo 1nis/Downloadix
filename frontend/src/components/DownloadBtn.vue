@@ -308,19 +308,73 @@ const handleDownload = async (audioOnly = false) => {
 .btn-video {
   flex: 2;
   background: linear-gradient(90deg, var(--accent), #a855f7);
+  position: relative;
+}
+
+.btn-video::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.6), 0 0 60px rgba(139, 92, 246, 0.3);
+  pointer-events: none;
 }
 
 .btn-video:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+  transform: translateY(-3px);
+}
+
+.btn-video:hover:not(:disabled)::after {
+  opacity: 1;
+  animation: glow-pulse 1.5s ease-in-out infinite;
 }
 
 .btn-audio {
   flex: 1;
   background: linear-gradient(90deg, #10b981, #059669);
+  position: relative;
+}
+
+.btn-audio::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.6), 0 0 60px rgba(16, 185, 129, 0.3);
+  pointer-events: none;
 }
 
 .btn-audio:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
+  transform: translateY(-3px);
+}
+
+.btn-audio:hover:not(:disabled)::after {
+  opacity: 1;
+  animation: glow-pulse-green 1.5s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.6), 0 0 60px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.8), 0 0 80px rgba(139, 92, 246, 0.4);
+  }
+}
+
+@keyframes glow-pulse-green {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6), 0 0 60px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.8), 0 0 80px rgba(16, 185, 129, 0.4);
+  }
 }
 
 .btn-cancel {
